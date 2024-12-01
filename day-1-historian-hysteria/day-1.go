@@ -28,17 +28,17 @@ func main() {
 
 	left, right := make([]int, 0, len(nums)/2), make([]int, 0, len(nums)/2)
 
-  for i := 0; i < len(nums); i++ {
-	  if i%2 == 0 {
-      left = append(left, nums[i])
-		} else {
-			right = append(right, nums[i])
+	for i := 0; i < len(nums); i++ {
+		if i%2 == 0 {
+			left = append(left, nums[i])
+			continue
 		}
+		right = append(right, nums[i])
 	}
 
 	fmt.Println("Part 1:", calculateErrorSum(left, right))
 	fmt.Println("Part 2:", calculateSimilarityScore(left, right))
-  }
+}
 
 func calculateErrorSum(left, right []int) int {
 	sort.Ints(left)
@@ -64,13 +64,11 @@ func extractNumbers(input string) ([]int, error) {
 	extracted := make([]int, len(nums))
 	
 	for i, num := range nums {
-    result, err := strconv.Atoi(num)
-
-    if err != nil {
-      return extracted, err
-    }
-    extracted[i] = result
-
+		result, err := strconv.Atoi(num)
+    		if err != nil {
+			return extracted, err
+    		}
+    		extracted[i] = result
 	}
 	return extracted, nil 
 }
@@ -80,7 +78,6 @@ func getInputHTTP() (string, error) {
 	if err != nil {
 		return "", err
 	}
-  
 	req.AddCookie(&http.Cookie{
 		Name:  "session",
 		Value: os.Getenv("SESSION"),
