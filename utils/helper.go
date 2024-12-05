@@ -476,8 +476,12 @@ func CountCorrectUpdatesMiddleNumber(input string) (int, int, error) {
           sumOfMiddleNumber += update[middleIndex]
           continue
         }
-
+        
+        numOfPerm := Factorial(len(update))
+        currentPerm := 0
         for perm := range generatePermutations(update) {
+          currentPerm += 1
+          fmt.Println("Permutation:", currentPerm, "/", numOfPerm)
           permString := arrayToString(perm)
           if checkPertinentRules(pertinentRules, permString) {
             middleIndex := len(perm) / 2
@@ -508,34 +512,42 @@ func arrayToString(arr []int) string {
 }
 
 func generatePermutations(original []int) <-chan []int {
-    ch := make(chan []int)
+  ch := make(chan []int)
+  
+  go func() {
+    defer close(ch)
     
-    go func() {
-        defer close(ch)
-        
-        if len(original) <= 1 {
-            ch <- original
-            return
-        }
-        
-        var permute func([]int, int)
-        permute = func(arr []int, k int) {
-            if k == len(arr)-1 {
-                perm := make([]int, len(arr))
-                copy(perm, arr)
-                ch <- perm
-                return
-            }
-            
-            for i := k; i < len(arr); i++ {
-                arr[k], arr[i] = arr[i], arr[k]
-                permute(arr, k+1)
-                arr[k], arr[i] = arr[i], arr[k]
-            }
-        }
-        
-        permute(original, 0)
-    }()
+    if len(original) <= 1 {
+      ch <- original
+      return
+    }
     
-    return ch
+    var permute func([]int, int)
+    permute = func(arr []int, k int) {
+      if k == len(arr)-1 {
+        perm := make([]int, len(arr))
+        copy(perm, arr)
+        ch <- perm
+        return
+      }
+      
+      for i := k; i < len(arr); i++ {
+        arr[k], arr[i] = arr[i], arr[k]
+        permute(arr, k+1)
+        arr[k], arr[i] = arr[i], arr[k]
+      }
+    }
+    
+    permute(original, 0)
+  }()
+  
+  return ch
+}
+
+func Factorial(n int) int {
+  result := 1
+  for i := 1; i <= n; i++ {
+    result *= i
+  }
+  return result
 }
