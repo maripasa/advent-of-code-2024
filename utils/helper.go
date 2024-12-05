@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -8,7 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"time"
-  "errors"
+  "strings"
 )
 
 func ManageAdventOfCodePuzzles(year int) (error) {
@@ -96,9 +98,10 @@ func createGoPuzzleFileWithBoilerplate(day string, filename string) (error) {
     "advent_of_code_2024/utils"
   )
 
-  func Day` + day +`() {
-    raw, err := utils.GetInputFile(" + day + ")
+  func main() {
+    raw, err := utils.GetInputFile(` + day + `)
     if err != nil {
+      fmt.Println(err)
       os.Exit(1)
     }
 
@@ -428,3 +431,111 @@ func CalculateSimilarityScore(left, right []int) int {
 	return score
 }
 
+func CountCorrectUpdatesMiddleNumber(input string) (int, int, error) {
+    sumOfMiddleNumber := 0
+    sumOfMiddleNumberCorrected := 0
+
+    rawUpdates := regexp.MustCompile(`(\d+,)+\d+`).FindAllString(input, -1)
+    updates := make([][]int, len(rawUpdates))
+
+    for i, update := range rawUpdates {
+        extracted, err := ExtractNumbers(update)
+        if err != nil {
+            return 0, 0, err
+        }
+        updates[i] = extracted
+    }
+
+    updateNumber := len(updates)
+
+    for index, update := range updates {
+        fmt.Println("Checking:", index+1, "/", updateNumber)
+
+        possibleRules := [][]int{}
+        for i := 0; i < len(update); i++ {
+            for j := 0; j < len(update); j++ {
+                if i != j {
+                    pair := []int{update[i], update[j]}
+                    possibleRules = append(possibleRules, pair)
+                }
+            }
+        }
+
+        pertinentRules := [][]int{}
+        for _, rule := range possibleRules {
+            FilterRule := regexp.MustCompile(strconv.Itoa(rule[0]) + `\|` + strconv.Itoa(rule[1])).FindString(input)
+            if FilterRule == "" {
+                continue
+            }
+            pertinentRules = append(pertinentRules, rule)
+        }
+
+        // Check if the update satisfies the pertinent rules
+        if checkPertinentRules(pertinentRules, rawUpdates[index]) {
+          middleIndex := len(update) / 2
+          sumOfMiddleNumber += update[middleIndex]
+          continue
+        }
+
+        for perm := range generatePermutations(update) {
+          permString := arrayToString(perm)
+          if checkPertinentRules(pertinentRules, permString) {
+            middleIndex := len(perm) / 2
+            sumOfMiddleNumberCorrected += perm[middleIndex]
+            continue
+          }
+        }
+    }
+    return sumOfMiddleNumber, sumOfMiddleNumber + sumOfMiddleNumberCorrected, nil
+}
+
+func checkPertinentRules(pertinentRules [][]int, rawUpdate string) bool {
+  for _, rule := range pertinentRules {
+    ruleCheck := regexp.MustCompile(strconv.Itoa(rule[0]) + ".*" + strconv.Itoa(rule[1])).FindString(rawUpdate)
+    if ruleCheck == "" {
+      return false
+    }
+  }
+  return true
+}
+
+func arrayToString(arr []int) string {
+  var sb strings.Builder
+  for _, num := range arr {
+    sb.WriteString(fmt.Sprintf("%d", num))
+  }
+  return sb.String()
+}
+
+func generatePermutations(original []int) <-chan []int {
+    ch := make(chan []int)
+    
+    go func() {
+        defer close(ch)
+        
+        if len(original) <= 1 {
+            ch <- original
+            return
+        }
+        
+        var permute func([]int, int)
+        permute = func(arr []int, k int) {
+            if k == len(arr)-1 {
+                perm := make([]int, len(arr))
+                copy(perm, arr)
+                ch <- perm
+                return
+            }
+            
+            for i := k; i < len(arr); i++ {
+                arr[k], arr[i] = arr[i], arr[k]
+                permute(arr, k+1)
+                arr[k], arr[i] = arr[i], arr[k]
+            }
+        }
+        
+        permute(original, 0)
+    }()
+    
+    return ch
+}
