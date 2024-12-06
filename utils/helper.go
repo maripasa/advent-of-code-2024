@@ -1,287 +1,37 @@
 package utils
 
 import (
-	"errors"
 	"fmt"
-	"io"
-	"net/http"
-	"os"
 	"regexp"
 	"sort"
 	"strconv"
-	"time"
   "strings"
 )
 
-func ManageAdventOfCodePuzzles(year int) (error) {
-  if os.Getenv("SESSION") == "" {
-    return errors.New("Session not found in environment.")
-  }
+// Parses a string into pairs of integers and associated updates.
+func GetPairs(input string) ([][]int, []string, error) {
+	rawPairs := regexp.MustCompile(`\d+|\d+`).FindAllString(input, -1)
+	rawUpdates := regexp.MustCompile(`(\d+,)+|\d+`).FindAllString(input, -1)
 
-
-  today := time.Now().Truncate(2 * time.Hour)
-  if today.Day() > 25 || today.Year() != year || today.Month() != time.December {
-    return nil
-  }
-  
-  for day := 1 ; day <= today.Day() ; day++ {
-    filename := "day"
-    if day < 10 { filename += "0" }
-    filename += strconv.Itoa(day)
-    
-    _, err := os.Stat(filename)
-
-    if err != nil {
-      if !os.IsNotExist(err) {
-        return err
-      }
-      err := os.MkdirAll(filename, 0755)
-      if err != nil {
-        return err
-      }
-    }
-
-    _, err = os.Stat(filename + "/" + filename + ".go")
-
-    if err != nil {
-      if !os.IsNotExist(err) {
-        return err
-      }
-      err = createGoPuzzleFileWithBoilerplate(strconv.Itoa(day), filename + "/" + filename + ".go")
-      if err != nil {
-        return err
-      }
-    }
-    
-    _, err = os.Stat(filename + "/input.txt")
-
-    if err != nil {
-      if !os.IsNotExist(err) {
-        return err
-      }
-      raw, err := GetInputHTTP(strconv.Itoa(day))
-      if err != nil {
-        return err
-      }
-      err = createFileAndWriteString(filename + "/input.txt", raw)
-      if err != nil {
-        return err
-      }
-      }
-
-    _, err = os.Stat(filename + "go.mod")
-
-    if err != nil {
-      if !os.IsNotExist(err) {
-        return err
-      }
-      raw, err := GetInputHTTP(strconv.Itoa(day))
-      if err != nil {
-        return err
-      }
-      err = createFileAndWriteString(filename + "/input.txt", raw)
-      if err != nil {
-        return err
-      }
-    }
-  }
-  return nil 
-}
-
-
-func createGoPuzzleFileWithBoilerplate(day string, filename string) (error) {
-  content := `package main
-  
-  import (
-    "fmt"
-    "os"
-    "advent_of_code_2024/utils"
-  )
-
-  func main() {
-    raw, err := utils.GetInputFile(` + day + `)
-    if err != nil {
-      fmt.Println(err)
-      os.Exit(1)
-    }
-
-    fmt.Println("Day ` + day + ` - Part 1:")
-    fmt.Println("Day ` + day + ` - Part 2:")
-  }
-  `
-  return createFileAndWriteString(filename, content)
-}
-
-func createFileAndWriteString(filename string, content string) (error) {
-  file, err := os.Create(filename)
-  if err != nil {
-    return err
-  }
-  defer file.Close()
-	_, err = file.WriteString(content)
-  return err 
-}
-
-func GetInputFile(day string) (string, error){
-  inputFileName := "day"
-  intDay, err := strconv.Atoi(day) 
-  if err != nil { return "", err }
-  if intDay < 10 { inputFileName += "0" }
-  inputFileName += day + "/input.txt"
-  file, err := os.ReadFile(inputFileName)
-  return string(file), err
-}
-
-func GetInputHTTP(day string) (string, error) {
-	req, err := http.NewRequest("GET", "https://adventofcode.com/2024/day/" + day + "/input", nil)
-	if err != nil {
-		return "", err
-	}
-	req.AddCookie(&http.Cookie{
-		Name:  "session",
-		Value: os.Getenv("SESSION"),
-	})
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	return string(body), err
-}
-
-func Abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
-}
-
-func Count(slice []int, val int) int {
-	count := 0
-	for index := range slice {
-		if slice[index] == val {
-			count++
+	pairs := make([][]int, len(rawPairs))
+	for i, pair := range rawPairs {
+		extracted, err := ExtractNumbers(pair)
+		if err != nil {
+			return nil, nil, err
 		}
+		pairs[i] = extracted
 	}
-	return count
+	return pairs, rawUpdates, nil
 }
 
-func ExtractByLine(input string) ([]string) {
-  extracted := regexp.MustCompile(`(?m)^.*$`).FindAllString(input, -1)
-  return extracted[:len(extracted)-1]
-}
 
-func ExtractNumbersByLine(input string) ([][]int, error) {
+
+func RemoveNewLines(input string) (string) {
   lines := regexp.MustCompile(`(?m)^.*$`).FindAllString(input, -1)
-	extracted := [][]int{}
-  for _, line := range lines {
-    result, err := ExtractNumbers(line)
-    if err != nil {
-		  return extracted, err
-    }
-    extracted = append(extracted, result)
-  }
-  extracted = extracted[:len(extracted)-1]
-  return extracted, nil
-}
-
-func ExtractNumbers(input string) ([]int, error) {
-	nums := regexp.MustCompile(`\d+`).FindAllString(input, -1)
-	extracted := make([]int, len(nums))
-	
-	for i, num := range nums {
-		result, err := strconv.Atoi(num)
-    if err != nil {
-		  return extracted, err
-    }
-
-    extracted[i] = result
-	}
-	return extracted, nil 
-}
-
-func NumberOfSafeLines(lines [][]int) (int) {
-  output := 0
-  for _, line := range lines {
-    var crescent bool
-    if len(line) == 1 {
-      output += 1
-      continue
-    }
-
-    if line[0] > line[1] { crescent = false }
-    if line[0] < line[1] { crescent = true }
-    if line[0] == line[1] { continue }
-
-    if isSequencePart2(line, crescent) { output += 1 }
-  }
+  output := ""
+  for _, line := range lines {output += line}
+  
   return output
-}
-
-func isSequencePart2(line []int, crescent bool) (bool) {
-  for i := range line {
-    if i == 0 {
-      continue
-    }
-    if Abs(line[i-1]-line[i]) > 3 { return false }
-    if line[i-1] == line[i] { return false }
-    if crescent {
-      if line[i-1] > line[i] { return false }
-      continue
-    }
-    if line[i-1] < line[i] { return false }
-    continue
-  }
-  return true
-}
-
-func NumberOfSafeLinesWithDampening(lines [][]int) (int) {
-  output := 0
-  for _, line := range lines {
-    var crescent bool
-    if len(line) == 1 {
-      output += 1
-      continue
-    }
-
-    if line[0] > line[1] { crescent = false }
-    if line[0] < line[1] { crescent = true }
-
-    if isSequencePart2(line, crescent) {
-      output += 1
-      continue
-    }
-    
-    dampeningVersions := createCombinationsWithOneMissing(line)
-    for _, newLine := range dampeningVersions {
-      if len(newLine) == 1 {
-        output += 1
-        break 
-      }
-
-      if newLine[0] > newLine[1] { crescent = false }
-      if newLine[0] < newLine[1] { crescent = true }
-
-      if isSequencePart2(newLine, crescent) {
-        output += 1
-        break 
-    }
-    }
-
-  }
-  return output
-}
-
-func createCombinationsWithOneMissing(line []int) ([][]int){
-	extracted := make([][]int, len(line))
-  for i := range line {
-    extracted[i] = append([]int(nil), line[:i]...)
-    extracted[i] = append(extracted[i], line[i+1:]...)
-  }
-  return extracted
 }
 
 func ExtractMuls(input string) ([][]int, error) {
@@ -408,10 +158,6 @@ func FindXmas(matrix []string) (int) {
   return output
 }
 
-/* func Filter()
-func Reduce()
-func Map() */
-
 func CalculateErrorSum(left, right []int) int {
 	sort.Ints(left)
 	sort.Ints(right)
@@ -471,83 +217,142 @@ func CountCorrectUpdatesMiddleNumber(input string) (int, int, error) {
         }
 
         // Check if the update satisfies the pertinent rules
-        if checkPertinentRules(pertinentRules, rawUpdates[index]) {
+        brokenRules, result := checkPertinentRules(pertinentRules, rawUpdates[index])
+        if result {
           middleIndex := len(update) / 2
           sumOfMiddleNumber += update[middleIndex]
           continue
         }
         
-        numOfPerm := Factorial(len(update))
-        currentPerm := 0
-        for perm := range generatePermutations(update) {
-          currentPerm += 1
-          fmt.Println("Permutation:", currentPerm, "/", numOfPerm)
-          permString := arrayToString(perm)
-          if checkPertinentRules(pertinentRules, permString) {
-            middleIndex := len(perm) / 2
-            sumOfMiddleNumberCorrected += perm[middleIndex]
-            continue
-          }
+        updatedUpdate := correctUpdate(update, brokenRules)
+        if result {
+          middleIndex := len(updatedUpdate) / 2
+          sumOfMiddleNumberCorrected += updatedUpdate[middleIndex]
         }
+        
     }
     return sumOfMiddleNumber, sumOfMiddleNumber + sumOfMiddleNumberCorrected, nil
 }
 
-func checkPertinentRules(pertinentRules [][]int, rawUpdate string) bool {
+func checkPertinentRules(pertinentRules [][]int, rawUpdate string) ([][]int, bool) {
+  brokenRules := [][]int{}
+
   for _, rule := range pertinentRules {
     ruleCheck := regexp.MustCompile(strconv.Itoa(rule[0]) + ".*" + strconv.Itoa(rule[1])).FindString(rawUpdate)
     if ruleCheck == "" {
-      return false
+      brokenRules = append(brokenRules, rule)
     }
   }
-  return true
-}
-
-func arrayToString(arr []int) string {
-  var sb strings.Builder
-  for _, num := range arr {
-    sb.WriteString(fmt.Sprintf("%d", num))
+  if len(brokenRules) == 0 {
+    return brokenRules, true
   }
-  return sb.String()
+  return brokenRules, false 
 }
 
-func generatePermutations(original []int) <-chan []int {
-  ch := make(chan []int)
-  
-  go func() {
-    defer close(ch)
-    
-    if len(original) <= 1 {
-      ch <- original
-      return
-    }
-    
-    var permute func([]int, int)
-    permute = func(arr []int, k int) {
-      if k == len(arr)-1 {
-        perm := make([]int, len(arr))
-        copy(perm, arr)
-        ch <- perm
-        return
+
+func correctUpdate(update []int, brokenRules [][]int) ([]int) {
+  corrected := []int{}
+  copy(corrected, update)
+  for _, brokenRule := range brokenRules {
+    aux1 := 0
+    for w, item := range update {
+      if brokenRule[1] == item {
+        aux1 = item
+        corrected = RemoveAtIndex(corrected, w)
       }
-      
-      for i := k; i < len(arr); i++ {
-        arr[k], arr[i] = arr[i], arr[k]
-        permute(arr, k+1)
-        arr[k], arr[i] = arr[i], arr[k]
+      if brokenRule[0] == item {
+        corrected = insertAtIndex(corrected, w+1, aux1)
+        break
       }
     }
-    
-    permute(original, 0)
-  }()
-  
-  return ch
+  }
+
+  return corrected 
 }
 
-func Factorial(n int) int {
-  result := 1
-  for i := 1; i <= n; i++ {
-    result *= i
-  }
-  return result
+func ProcessDependencySequence(pairs [][]int, atualizations []string) int {
+	pagesBefore := make(map[int]map[int]bool)
+	pagesAfter := make(map[int]map[int]bool)
+
+	for _, pair := range pairs {
+		a, b := pair[0], pair[1]
+		if pagesBefore[b] == nil {
+			pagesBefore[b] = make(map[int]bool)
+		}
+		pagesBefore[b][a] = true
+		
+		if pagesAfter[a] == nil {
+			pagesAfter[a] = make(map[int]bool)
+		}
+		pagesAfter[a][b] = true
+	}
+
+	accumulated := 0
+
+	for _, atu := range atualizations {
+		seqStr := strings.Split(atu, ",")
+		sequence := make([]int, len(seqStr))
+		for i, s := range seqStr {
+			sequence[i], _ = strconv.Atoi(s)
+		}
+
+		if !isSequenceValid(sequence, pagesBefore) {
+			orderedSequence := makeSequenceValid(sequence, pagesBefore, pagesAfter)
+			accumulated += orderedSequence[len(orderedSequence)/2]
+		}
+	}
+
+	return accumulated
 }
+
+func isSequenceValid(sequence []int, pagesBefore map[int]map[int]bool) bool {
+	for i, x := range sequence {
+		for j, y := range sequence {
+			if pagesBefore[y] != nil && pagesBefore[y][x] && i > j {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func makeSequenceValid(sequence []int, pagesBefore map[int]map[int]bool, pagesAfter map[int]map[int]bool) []int {
+	orderedSequence := []int{}
+	queue := []int{}
+	
+	remainingDependencies := make(map[int]int)
+	for _, v := range sequence {
+		remainingDependencies[v] = 0
+		for x := range pagesBefore[v] {
+			if contains(sequence, x) {
+				remainingDependencies[v]++
+			}
+		}
+	}
+
+	for v, deps := range remainingDependencies {
+		if deps == 0 {
+			queue = append(queue, v)
+		}
+	}
+
+	for len(queue) > 0 {
+		x := queue[0]
+		queue = queue[1:]
+		orderedSequence = append(orderedSequence, x)
+
+		if pagesAfter[x] != nil {
+			for y := range pagesAfter[x] {
+				if _, exists := remainingDependencies[y]; exists {
+					remainingDependencies[y]--
+					if remainingDependencies[y] == 0 {
+						queue = append(queue, y)
+					}
+				}
+			}
+		}
+	}
+
+	return orderedSequence
+}
+

@@ -3,7 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
-  "advent_of_code_2024/utils"
+	"advent_of_code_2024/utils/std"
+	"advent_of_code_2024/utils/advent_of_code"
 )
 
 func main() {

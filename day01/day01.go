@@ -2,36 +2,35 @@ package main
 
 import (
 	"fmt"
-	"os"
-  "advent_of_code_2024/utils"
+	"sort"
+	"advent_of_code_2024/utils/std"
+	"advent_of_code_2024/utils/advent_of_code"
 )
 
 func main() {
-	input, err := utils.GetInputFile("1")
-	if err != nil {
-    fmt.Println(err)
-		os.Exit(1)
-	}
-	nums, err := utils.ExtractNumbers(input)
+	input, err := aoc.GetInputFile("1")
+	std.Error(err, 1)
 
-	if err != nil {
-    fmt.Println(err)
-		os.Exit(2)
-	}
+	nums, err := std.ExtractNumbers(input)
+	std.Error(err, 2)
 
-	left, right := make([]int, 0, len(nums)/2), make([]int, 0, len(nums)/2)
+	left, right := std.Split(nums)
 
-	for i := 0; i < len(nums); i++ {
-		if i%2 == 0 {
-			left = append(left, nums[i])
-			continue
-		}
-		right = append(right, nums[i])
-	}
-
-	fmt.Println("Day 1 - Part 1:", utils.CalculateErrorSum(left, right))
-	fmt.Println("Day 1 - Part 2:", utils.CalculateSimilarityScore(left, right))
+	fmt.Println("Day 1 - Part 1:", calculateErrorSum(left, right))
+	fmt.Println("Day 1 - Part 2:", calculateSimilarityScore(left, right))
 }
 
+func calculateErrorSum(left, right []int) int {
+	sort.Ints(left)
+	sort.Ints(right)
 
+	return std.Reduce(left, 0, func(acc int, l int) int {
+		return acc + std.Abs(l - right[acc])
+	})
+}
 
+func calculateSimilarityScore(left, right []int) int {
+	return std.Reduce(left, 0, func(acc int, l int) int {
+		return acc + l * std.Count(right, l)
+	})
+}
