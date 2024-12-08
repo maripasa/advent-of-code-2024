@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+  "advent_of_code_2024/utils/std"
 )
 
 // ManageAdventOfCodePuzzles sets up the puzzles for the given year.
@@ -98,11 +99,11 @@ func createGoPuzzleFileWithBoilerplate(day int, path string) error {
 import (
 	"fmt"
 	"advent_of_code_2024/utils/std"
-	"advent_of_code_2024/utils/advent_of_code"
+	"advent_of_code_2024/utils/aoc"
 )
 
 func main() {
-	input, err := aoc.GetInputFile(%d)
+	input, err := aoc.GetInputFile("%d")
 	std.Error(err, 1)
 
 	fmt.Println("Day %d - Part 1:")
@@ -145,4 +146,9 @@ func GetInputFile(day string) (string, error) {
 	inputFileName := fmt.Sprintf("day%02d/input.txt", intDay)
 	file, err := os.ReadFile(inputFileName)
 	return string(file), err
+}
+
+func IsWithinBounds(pos std.Vector2[int], matrix []string) bool {
+	rows, cols := len(matrix), len(matrix[0])
+  return pos.Y >= 0 && pos.Y < rows && pos.X >= 0 && pos.X < cols
 }

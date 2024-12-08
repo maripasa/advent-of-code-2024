@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"advent_of_code_2024/utils/std"
-	"advent_of_code_2024/utils/advent_of_code"
+	"advent_of_code_2024/utils/aoc"
 )
 
 func main() {
@@ -18,14 +18,12 @@ func main() {
 }
 
 func createCombinationsWithOneMissing(line []int) [][]int {
-	// Use Map to create combinations
 	return std.Map(line, func(i int) []int {
 		return append(append([]int(nil), line[:i]...), line[i+1:]...)
 	})
 }
 
 func isSequence(line []int, crescent bool) bool {
-	// Optimized sequence check logic
 	for i := 1; i < len(line); i++ {
 		if std.Abs(line[i-1]-line[i]) > 3 || line[i-1] == line[i] ||
 			(crescent && line[i-1] > line[i]) || (!crescent && line[i-1] < line[i]) {

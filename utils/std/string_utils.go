@@ -57,3 +57,8 @@ func ExtractNumbersFromMatches(matches []string) ([]int, error) {
 	}
 	return numbers, nil
 }
+
+// Function that creates a new slice with the indexed value x set to another value. Useful for immutable slices.
+func ReplaceByIndex(str string, index int, value string) string {
+  return str[:index] + value + str[index+1:]
+}

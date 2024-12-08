@@ -24,16 +24,6 @@ func GetPairs(input string) ([][]int, []string, error) {
 	return pairs, rawUpdates, nil
 }
 
-
-
-func RemoveNewLines(input string) (string) {
-  lines := regexp.MustCompile(`(?m)^.*$`).FindAllString(input, -1)
-  output := ""
-  for _, line := range lines {output += line}
-  
-  return output
-}
-
 func ExtractMuls(input string) ([][]int, error) {
   muls := regexp.MustCompile(`mul\((\d+),(\d+)\)`).FindAllString(input, -1)
 

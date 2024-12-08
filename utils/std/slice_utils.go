@@ -3,7 +3,7 @@ package std
 // ===== Slice Utilities ===== sliceutils =====
 
 // Counts all occurrences of a specific value in a slice.
-func Count[T comparable](slice []T, value T) int {
+func CountOccurrences[T comparable](slice []T, value T) int {
 	count := 0
 	for _, item := range slice {
 		if item == value {
@@ -39,7 +39,7 @@ func RemoveAtIndex[T any](slice []T, index int) []T {
 	return append(slice[:index], slice[index+1:]...)
 }
 
-func Split[T any](slice []T) ([]T, []T) {
+func SliceSplit[T any](slice []T) ([]T, []T) {
 	left, right := []T{}, []T{}
 	for i, item := range slice {
 		if i%2 == 0 {
@@ -65,4 +65,14 @@ func Unzip[T any] (slice [][2]T) ([]T, []T){
     left[i], right[i] = item[0], item[1]
   }
   return left, right
+}
+
+func CombinationPairs[T any](list []T) [][2]T {
+	var pairs [][2]T
+	for i := 0; i < len(list); i++ {
+		for j := i + 1; j < len(list); j++ {
+			pairs = append(pairs, [2]T{list[i], list[j]})
+		}
+	}
+	return pairs
 }

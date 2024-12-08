@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"advent_of_code_2024/utils/std"
-	"advent_of_code_2024/utils/advent_of_code"
+	"advent_of_code_2024/utils/aoc"
 )
 
 func main() {
@@ -14,7 +14,7 @@ func main() {
 	nums, err := std.ExtractNumbers(input)
 	std.Error(err, 2)
 
-	left, right := std.Split(nums)
+	left, right := std.SliceSplit(nums)
 
 	fmt.Println("Day 1 - Part 1:", calculateErrorSum(left, right))
 	fmt.Println("Day 1 - Part 2:", calculateSimilarityScore(left, right))
@@ -31,6 +31,6 @@ func calculateErrorSum(left, right []int) int {
 
 func calculateSimilarityScore(left, right []int) int {
 	return std.Reduce(left, 0, func(acc int, l int) int {
-		return acc + l * std.Count(right, l)
+		return acc + l * std.CountOccurrences(right, l)
 	})
 }

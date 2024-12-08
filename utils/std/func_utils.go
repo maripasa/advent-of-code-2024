@@ -3,11 +3,11 @@ package std
 // ===== Functional Utilities ===== funcutils =====
 
 // Returns a new slice containing only the elements from the first slice for which the given function does not return an error.
-func FilterMap[T any](slice []T, predicate func(T) error) []T {
-	var result []T
+func FilterMap[T any, U any](slice []T, predicate func(T) (U, error)) []U {
+	var result []U
 	for _, value := range slice {
-		if predicate(value) == nil {
-			result = append(result, value)
+    if answer, err := predicate(value); err == nil {
+			result = append(result, answer)
 		}
 	}
 	return result
@@ -51,4 +51,26 @@ func Map[T any, U any](slice []T, transform func(T) U) []U {
 		result[i] = transform(value)
 	}
 	return result
+}
+
+// Counts the number of elements in a given list satisfying a given preicate
+func Count[T any](slice []T, predicate func(T) bool) int {
+  if len(slice) == 0 {
+    return 0
+  }
+
+  if predicate(slice[0]) {
+    return 1 + Count(slice[1:], predicate)
+  }
+  return Count(slice[1:], predicate)
+}
+
+// Returns true if the given function returns true for all the elements in the given list. If the function returns false for any of the elements it immediately returns false without checking the rest of the list.
+func All[T any](list []T, predicate func(T) bool) bool {
+	for _, elem := range list {
+		if !predicate(elem) {
+			return false
+		}
+	}
+	return true
 }

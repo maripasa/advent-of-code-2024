@@ -4,16 +4,13 @@ import (
 	"fmt"
 	"os"
 	"advent_of_code_2024/utils/std"
-	"advent_of_code_2024/utils/advent_of_code"
+	"advent_of_code_2024/utils/aoc"
 )
 
 func main() {
-  raw, err := utils.GetInputFile("3")
-  if err != nil {
-    fmt.Println(err)
-    os.Exit(1)
-  }
-  
+  input, err := aoc.GetInputFile("3")
+  std.Error(err, 1)
+
   nums, err := utils.ExtractMuls(raw)
   if err != nil {
     fmt.Println(err)

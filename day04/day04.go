@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 	"advent_of_code_2024/utils/std"
-	"advent_of_code_2024/utils/advent_of_code"
+	"advent_of_code_2024/utils/aoc"
 )
 
 func main() {
-	raw, err := utils.GetInputFile("4")
+	raw, err := aoc.GetInputFile("4")
 	if err != nil {
     fmt.Println(err)
 		os.Exit(1)

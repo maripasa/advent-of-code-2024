@@ -1,7 +1,7 @@
 package main
 
 import (
-	"advent_of_code_2024/utils/advent_of_code"
+	"advent_of_code_2024/utils/aoc"
 	"fmt"
 	"os"
 )
